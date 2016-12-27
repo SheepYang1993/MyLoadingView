@@ -8,16 +8,39 @@ import android.widget.SeekBar;
 
 public class MainActivity extends AppCompatActivity {
 
-    private SeekBar seek;
+    private SeekBar seekBarProgress;
+    private SeekBar seekBarWaveSize;
     private LoadingView loadingView;
+    private CheckBox cbIsFansMove;
+    private CheckBox cbWaveMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        seek = (SeekBar) findViewById(R.id.seekbar);
+        seekBarWaveSize = (SeekBar) findViewById(R.id.seekbar_wave_size);
+        seekBarProgress = (SeekBar) findViewById(R.id.seekbar_progress);
         loadingView = (LoadingView) findViewById(R.id.loadingView);
-        CheckBox cbIsFansMove = (CheckBox) findViewById(R.id.cb_is_fans_move);
+        cbIsFansMove = (CheckBox) findViewById(R.id.cb_is_fans_move);
+        cbWaveMode = (CheckBox) findViewById(R.id.cb_wave_mode);
+
+        seekBarWaveSize.setMax((int) (loadingView.getMaxWaveSize() - loadingView.getMinWaveSize()));
+        seekBarWaveSize.setProgress((int) loadingView.getWaveSize());
+        seekBarProgress.setMax(loadingView.getMax());
+        seekBarProgress.setProgress(loadingView.getProgress());
+        cbWaveMode.setChecked(loadingView.getWaveMode() == LoadingView.WAVE_MODE_DEFAULT ? true : false);
+        cbWaveMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    cbWaveMode.setText("默认波浪");
+                    loadingView.setWaveMode(LoadingView.WAVE_MODE_DEFAULT);
+                } else {
+                    cbWaveMode.setText("左右浮动");
+                    loadingView.setWaveMode(LoadingView.WAVE_MODE_FLOATING);
+                }
+            }
+        });
         cbIsFansMove.setChecked(loadingView.isFansMove());
         cbIsFansMove.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -25,7 +48,23 @@ public class MainActivity extends AppCompatActivity {
                 loadingView.setFansMove(isCheck);
             }
         });
-        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        seekBarWaveSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                loadingView.setWaveSize(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        seekBarProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
                 loadingView.setProgress(progress);

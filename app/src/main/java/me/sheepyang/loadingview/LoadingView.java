@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import me.sheepyang.loadingview.utils.BitmapUtil;
@@ -23,6 +24,11 @@ import me.sheepyang.loadingview.utils.PxUtils;
  */
 
 public class LoadingView extends View {
+    public static final int WAVE_MODE_DEFAULT = 0;
+    public static final int WAVE_MODE_FLOATING = 1;
+    private String mWaveMode;
+    private float mMinWaveSize;
+    private float mMaxWaveSize;
     private Bitmap mBitmapFans;
     private Context mContext;
     private int mWaveColor;
@@ -65,9 +71,13 @@ public class LoadingView extends View {
         mFansColor = a.getColor(R.styleable.LoadingView_fans_color, Color.parseColor("#e2dedc"));
         mWaveColor = a.getColor(R.styleable.LoadingView_wave_color, Color.parseColor("#9f0052"));
         mWaveSize = a.getDimension(R.styleable.LoadingView_wave_size, PxUtils.dpToPx(10, mContext));
+        mMinWaveSize = a.getDimension(R.styleable.LoadingView_min_wave_size, PxUtils.dpToPx(5, mContext));
+        mMaxWaveSize = a.getDimension(R.styleable.LoadingView_max_wave_size, PxUtils.dpToPx(100, mContext));
         mMax = a.getInt(R.styleable.LoadingView_max, 100);
         mIsFansMove = a.getBoolean(R.styleable.LoadingView_is_fans_move, false);
         mProgress = a.getInt(R.styleable.LoadingView_progress, 0);
+        mWaveMode = a.getString(R.styleable.LoadingView_wave_mode);
+        Log.i("SheepYang", "mWaveMode:" + mWaveMode);
         a.recycle();
         init();
     }
@@ -140,6 +150,8 @@ public class LoadingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        mWaveSize = mWaveSize < mMinWaveSize ? mMinWaveSize : mWaveSize;
+        mWaveSize = mWaveSize > mMaxWaveSize ? mMaxWaveSize : mWaveSize;
         if (y > mWaveSize) {
             isUp = true;// 波浪升到顶点了
         } else if (y < -mWaveSize) {
@@ -152,11 +164,17 @@ public class LoadingView extends View {
         }
         mPath.reset();
         x = (int) (mProgress / (float) mMax * mWidth);
-        mPath.moveTo(0, 0);
-        mPath.lineTo(x, 0);
-        mPath.cubicTo(x + y, mHeight / 3, x - y, 2 * mHeight / 3, x, mHeight);
-        mPath.lineTo(0, mHeight);
-        mPath.close();
+        if (x > 0) {
+            mPath.moveTo(0, 0);
+            mPath.lineTo(x, 0);
+            if ("1".equals(mWaveMode)) {
+                mPath.cubicTo(x + y, mHeight / 3 + y, x - y, 2 * mHeight / 3 + y, x, mHeight);
+            } else {
+                mPath.cubicTo(x + y, mHeight / 3, x - y, 2 * mHeight / 3, x, mHeight);
+            }
+            mPath.lineTo(0, mHeight);
+            mPath.close();
+        }
 
         mBitmap.eraseColor(Color.parseColor("#00000000"));
 
@@ -165,8 +183,8 @@ public class LoadingView extends View {
         mCanvas.drawArc(mRightRectf, 270, 180, true, mBgPaint);
 
         mCanvas.drawPath(mPath, mWavePaint);
-//        mCanvas.drawPoint(x + y, mHeight / 3/* + y * 2*/, mWavePaint);
-//        mCanvas.drawPoint(x - y, 2 * mHeight / 3/* + y * 2*/, mWavePaint);
+//        mCanvas.drawPoint(x + y, mHeight / 3 + y, mWavePaint);
+//        mCanvas.drawPoint(x - y, 2 * mHeight / 3 + y, mWavePaint);
 
         mMatrix.reset();
         if (mIsFansMove) {
@@ -179,6 +197,51 @@ public class LoadingView extends View {
 
         canvas.drawBitmap(mBitmap, 0, 0, mBgPaint);
         postInvalidateDelayed(5);
+    }
+
+    public int getProgress() {
+        return mProgress;
+    }
+
+    public int getMax() {
+        return mMax;
+    }
+
+    public float getMaxWaveSize() {
+        return mMaxWaveSize;
+    }
+
+    public float getMinWaveSize() {
+        return mMinWaveSize;
+    }
+
+    public float getWaveSize() {
+        return mWaveSize;
+    }
+
+    public int getWaveMode() {
+        switch (mWaveMode) {
+            case "0":
+                return WAVE_MODE_DEFAULT;
+            case "1":
+                return WAVE_MODE_FLOATING;
+            default:
+                return WAVE_MODE_DEFAULT;
+        }
+    }
+
+    public void setWaveMode(int waveMode) {
+        switch (waveMode) {
+            case WAVE_MODE_DEFAULT:
+                mWaveMode = "0";
+                break;
+            case WAVE_MODE_FLOATING:
+                mWaveMode = "1";
+                break;
+            default:
+                mWaveMode = "0";
+                break;
+        }
     }
 
     public void setProgress(int progress) {
@@ -195,5 +258,9 @@ public class LoadingView extends View {
 
     public boolean isFansMove() {
         return mIsFansMove;
+    }
+
+    public void setWaveSize(int waveSize) {
+        mWaveSize = PxUtils.dpToPx(waveSize, mContext);
     }
 }

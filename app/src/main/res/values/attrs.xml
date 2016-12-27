@@ -5,8 +5,14 @@
         <attr name="fans_color" format="color" />
         <attr name="wave_color" format="color" />
         <attr name="wave_size" format="dimension" />
+        <attr name="min_wave_size" format="dimension" />
+        <attr name="max_wave_size" format="dimension" />
         <attr name="max" format="integer" />
         <attr name="progress" format="integer" />
         <attr name="is_fans_move" format="boolean" />
+        <attr name="wave_mode" format="enum">
+            <enum name="default_floating" value="0" />
+            <enum name="floating_around" value="1" />
+        </attr>
     </declare-styleable>
 </resources>
