@@ -47,6 +47,7 @@ public class LoadingView extends View {
     private float mWaveSize;// 波浪高度
     private int mProgress;
     private int mMax;
+    private boolean mIsFansMove;
 
     public LoadingView(Context context) {
         this(context, null);
@@ -65,6 +66,7 @@ public class LoadingView extends View {
         mWaveColor = a.getColor(R.styleable.LoadingView_wave_color, Color.parseColor("#9f0052"));
         mWaveSize = a.getDimension(R.styleable.LoadingView_wave_size, PxUtils.dpToPx(10, mContext));
         mMax = a.getInt(R.styleable.LoadingView_max, 100);
+        mIsFansMove = a.getBoolean(R.styleable.LoadingView_is_fans_move, false);
         mProgress = a.getInt(R.styleable.LoadingView_progress, 0);
         a.recycle();
         init();
@@ -167,13 +169,15 @@ public class LoadingView extends View {
 //        mCanvas.drawPoint(x - y, 2 * mHeight / 3/* + y * 2*/, mWavePaint);
 
         mMatrix.reset();
-        mMatrix.postRotate(mRotate, mRadius, mRadius);
+        if (mIsFansMove) {
+            mMatrix.postRotate(mRotate, mRadius, mRadius);
+            mRotate = (mRotate + 10) % 360;
+        }
         mCanvas.translate(mWidth - 2 * mRadius, 0);
         mCanvas.drawBitmap(mBitmapFans, mMatrix, mBgPaint);
         mCanvas.translate(2 * mRadius - mWidth, 0);
 
         canvas.drawBitmap(mBitmap, 0, 0, mBgPaint);
-        mRotate = (mRotate + 10) % 360;
         postInvalidateDelayed(5);
     }
 
@@ -185,7 +189,11 @@ public class LoadingView extends View {
         mMax = max;
     }
 
-    private void setFansMove(boolean isMove) {
+    public void setFansMove(boolean isMove) {
+        mIsFansMove = isMove;
+    }
 
+    public boolean isFansMove() {
+        return mIsFansMove;
     }
 }
