@@ -1,4 +1,4 @@
-package me.sheepyang.loadingview;
+package me.sheepyang.loadingview.utils;
 
 import android.content.Context;
 import android.util.TypedValue;
