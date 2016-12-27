@@ -4,5 +4,8 @@
         <attr name="bg_color" format="color" />
         <attr name="fans_color" format="color" />
         <attr name="wave_color" format="color" />
+        <attr name="wave_size" format="dimension" />
+        <attr name="max" format="integer" />
+        <attr name="progress" format="integer" />
     </declare-styleable>
 </resources>

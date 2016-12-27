@@ -41,9 +41,12 @@ public class LoadingView extends View {
     private Canvas mCanvas;
     private PorterDuffXfermode mMode = new PorterDuffXfermode(PorterDuff.Mode.SRC_IN);
     private Path mPath;
-    private boolean isLeft;
+    private boolean isUp;
     private int x;
     private int y = 10;
+    private float mWaveSize;// 波浪高度
+    private int mProgress;
+    private int mMax;
 
     public LoadingView(Context context) {
         this(context, null);
@@ -60,6 +63,9 @@ public class LoadingView extends View {
         mBgColor = a.getColor(R.styleable.LoadingView_bg_color, Color.parseColor("#8197ab"));
         mFansColor = a.getColor(R.styleable.LoadingView_fans_color, Color.parseColor("#e2dedc"));
         mWaveColor = a.getColor(R.styleable.LoadingView_wave_color, Color.parseColor("#9f0052"));
+        mWaveSize = a.getDimension(R.styleable.LoadingView_wave_size, PxUtils.dpToPx(10, mContext));
+        mMax = a.getInt(R.styleable.LoadingView_max, 100);
+        mProgress = a.getInt(R.styleable.LoadingView_progress, 0);
         a.recycle();
         init();
     }
@@ -70,6 +76,7 @@ public class LoadingView extends View {
         mWavePaint.setFilterBitmap(true);
         mWavePaint.setColor(mWaveColor);
         mWavePaint.setXfermode(mMode);
+        mWavePaint.setStrokeWidth(10);
 
         mBgPaint = new Paint();
         mBgPaint.setAntiAlias(true);
@@ -130,40 +137,22 @@ public class LoadingView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-//        if (x > 50) {
-//            isLeft = true;
-//        } else if (x < 0) {
-//            isLeft = false;
-//        }
-//
-//        if (isLeft) {
-//            x = x - 1;
-//        } else {
-//            x = x + 1;
-//        }
-//        mPath.reset();
-//        y = (int) ((1 - 30 / 100f) * mHeight);
-//        mPath.moveTo(0, y);
-//        mPath.cubicTo(100 + x * 2, 50 + y, 100 + x * 2, y - 50, mWidth, y);
-//        mPath.lineTo(mWidth, mHeight);
-//        mPath.lineTo(0, mHeight);
-//        mPath.close();
-
-        if (y > mHeight / 2) {
-            isLeft = true;
-        } else if (y < 0) {
-            isLeft = false;
+        super.onDraw(canvas);
+        if (y > mWaveSize) {
+            isUp = true;// 波浪升到顶点了
+        } else if (y < -mWaveSize) {
+            isUp = false;// 波浪下降到最低点了
         }
-        if (isLeft) {
+        if (isUp) {
             y = y - 1;
         } else {
             y = y + 1;
         }
         mPath.reset();
-        x = (int) (50 / 100f) * mWidth;
+        x = (int) (mProgress / (float) mMax * mWidth);
         mPath.moveTo(0, 0);
         mPath.lineTo(x, 0);
-        mPath.cubicTo(100 + y * 2, 50 + x, 100 + y * 2, x - 50, x, mHeight);
+        mPath.cubicTo(x + y, mHeight / 3, x - y, 2 * mHeight / 3, x, mHeight);
         mPath.lineTo(0, mHeight);
         mPath.close();
 
@@ -174,6 +163,8 @@ public class LoadingView extends View {
         mCanvas.drawArc(mRightRectf, 270, 180, true, mBgPaint);
 
         mCanvas.drawPath(mPath, mWavePaint);
+//        mCanvas.drawPoint(x + y, mHeight / 3/* + y * 2*/, mWavePaint);
+//        mCanvas.drawPoint(x - y, 2 * mHeight / 3/* + y * 2*/, mWavePaint);
 
         mMatrix.reset();
         mMatrix.postRotate(mRotate, mRadius, mRadius);
@@ -184,5 +175,17 @@ public class LoadingView extends View {
         canvas.drawBitmap(mBitmap, 0, 0, mBgPaint);
         mRotate = (mRotate + 10) % 360;
         postInvalidateDelayed(5);
+    }
+
+    public void setProgress(int progress) {
+        mProgress = progress;
+    }
+
+    public void setMax(int max) {
+        mMax = max;
+    }
+
+    private void setFansMove(boolean isMove) {
+
     }
 }
