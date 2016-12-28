@@ -7,10 +7,10 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
-import android.widget.TextView;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import me.sheepyang.loadingview.utils.PxUtils;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,9 +29,13 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.seekbar_width)
     SeekBar seekbarWidth;
     @BindView(R.id.seekbar_height)
-    TextView seekbarHeight;
+    SeekBar seekbarHeight;
     @BindView(R.id.ll_main)
     LinearLayout llMain;
+    @BindView(R.id.seekbar_fans_speed)
+    SeekBar seekbarFansSpeed;
+    private int mMaxHeight;
+    private int mMinHeight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initData() {
+        mMaxHeight = PxUtils.dpToPx(150, this);
+        mMinHeight = PxUtils.dpToPx(40, this);
         seekbarWaveSize.setMax((int) (loadingView.getMaxWaveSize() - loadingView.getMinWaveSize()));
         seekbarWaveSize.setProgress((int) loadingView.getWaveSize());
         seekbarProgress.setMax(loadingView.getMax());
@@ -81,6 +87,41 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isCheck) {
                 loadingView.setFansMove(isCheck);
+            }
+        });
+        seekbarFansSpeed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                loadingView.setFansSpeed(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        seekbarHeight.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                int height = (int) (mMinHeight + (mMaxHeight - mMinHeight) * progress / (float) 100);
+                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) loadingView.getLayoutParams();
+                lp.height = height;
+                loadingView.setLayoutParams(lp);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
             }
         });
         seekbarWidth.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {

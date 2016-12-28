@@ -5,6 +5,9 @@
         <attr name="fans_color" format="color" />
         <attr name="wave_color" format="color" />
         <attr name="wave_size" format="dimension" />
+        <attr name="fans_speed" format="integer" />
+        <attr name="min_fans_speed" format="integer" />
+        <attr name="max_fans_speed" format="integer" />
         <attr name="min_wave_size" format="dimension" />
         <attr name="max_wave_size" format="dimension" />
         <attr name="max" format="integer" />

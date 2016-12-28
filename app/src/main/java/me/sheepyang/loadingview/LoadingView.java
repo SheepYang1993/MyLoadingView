@@ -31,6 +31,8 @@ public class LoadingView extends View {
     private int mFansMode;
     private float mMinWaveSize;
     private float mMaxWaveSize;
+    private int mMinFansSpeed;
+    private int mMaxFansSpeed;
     private Bitmap mBitmapFans;
     private Context mContext;
     private int mWaveColor;
@@ -53,6 +55,7 @@ public class LoadingView extends View {
     private int x;
     private int y = 10;
     private float mWaveSize;// 波浪高度
+    private int mFansSpeed;// 风扇速度
     private int mProgress;
     private int mMax;
     private boolean mIsFansMove;
@@ -75,6 +78,9 @@ public class LoadingView extends View {
         mWaveSize = a.getDimension(R.styleable.LoadingView_wave_size, PxUtils.dpToPx(10, mContext));
         mMinWaveSize = a.getDimension(R.styleable.LoadingView_min_wave_size, PxUtils.dpToPx(5, mContext));
         mMaxWaveSize = a.getDimension(R.styleable.LoadingView_max_wave_size, PxUtils.dpToPx(100, mContext));
+        mFansSpeed = a.getInt(R.styleable.LoadingView_fans_speed, 5);
+        mMinFansSpeed = a.getInt(R.styleable.LoadingView_min_fans_speed, 1);
+        mMaxFansSpeed = a.getInt(R.styleable.LoadingView_max_fans_speed, 50);
         mMax = a.getInt(R.styleable.LoadingView_max, 100);
         mIsFansMove = a.getBoolean(R.styleable.LoadingView_is_fans_move, false);
         mProgress = a.getInt(R.styleable.LoadingView_progress, 0);
@@ -151,6 +157,9 @@ public class LoadingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        mFansSpeed = mFansSpeed < mMinFansSpeed ? mMinFansSpeed : mFansSpeed;
+        mFansSpeed = mFansSpeed > mMaxFansSpeed ? mMaxFansSpeed : mFansSpeed;
+
         mWaveSize = mWaveSize < mMinWaveSize ? mMinWaveSize : mWaveSize;
         mWaveSize = mWaveSize > mMaxWaveSize ? mMaxWaveSize : mWaveSize;
         if (y > mWaveSize) {
@@ -192,12 +201,12 @@ public class LoadingView extends View {
         if (mIsFansMove) {
             switch (mFansMode) {
                 case FANS_MODE_PROGRESS_MOVE:
-                    mRotate = (int) ((mProgress / (float) mMax) * 100 * 10);
+                    mRotate = (int) ((mProgress / (float) mMax) * 100 * mFansSpeed);
                     mMatrix.postRotate(mRotate, mRadius, mRadius);
                     break;
                 default:
                     mMatrix.postRotate(mRotate, mRadius, mRadius);
-                    mRotate = (mRotate + 10) % 360;
+                    mRotate = (mRotate + mFansSpeed) % 360;
                     break;
             }
         }
@@ -231,6 +240,10 @@ public class LoadingView extends View {
 
     public int getWaveMode() {
         return mWaveMode;
+    }
+
+    public void setFansSpeed(int fansSpeed) {
+        mFansSpeed = fansSpeed;
     }
 
     public void setWaveMode(int waveMode) {

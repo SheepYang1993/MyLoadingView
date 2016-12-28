@@ -41,13 +41,13 @@
             android:layout_marginTop="5dp" />
 
         <TextView
-            android:id="@+id/seekbar_height"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
             android:text="设置高度" />
 
         <SeekBar
+            android:id="@+id/seekbar_height"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp" />
@@ -86,7 +86,9 @@
             android:id="@+id/seekbar_fans_speed"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp" />
+            android:layout_marginTop="5dp"
+            android:max="50"
+            android:progress="0" />
 
         <CheckBox
             android:id="@+id/cb_wave_mode"
