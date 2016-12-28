@@ -13,7 +13,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import me.sheepyang.loadingview.utils.BitmapUtil;
@@ -26,7 +25,10 @@ import me.sheepyang.loadingview.utils.PxUtils;
 public class LoadingView extends View {
     public static final int WAVE_MODE_DEFAULT = 0;
     public static final int WAVE_MODE_FLOATING = 1;
-    private String mWaveMode;
+    public static final int FANS_MODE_AUTO_MOVE = 0;
+    public static final int FANS_MODE_PROGRESS_MOVE = 1;
+    private int mWaveMode;
+    private int mFansMode;
     private float mMinWaveSize;
     private float mMaxWaveSize;
     private Bitmap mBitmapFans;
@@ -76,8 +78,8 @@ public class LoadingView extends View {
         mMax = a.getInt(R.styleable.LoadingView_max, 100);
         mIsFansMove = a.getBoolean(R.styleable.LoadingView_is_fans_move, false);
         mProgress = a.getInt(R.styleable.LoadingView_progress, 0);
-        mWaveMode = a.getString(R.styleable.LoadingView_wave_mode);
-        Log.i("SheepYang", "mWaveMode:" + mWaveMode);
+        mWaveMode = a.getInt(R.styleable.LoadingView_wave_mode, WAVE_MODE_DEFAULT);
+        mFansMode = a.getInt(R.styleable.LoadingView_fans_mode, FANS_MODE_AUTO_MOVE);
         a.recycle();
         init();
     }
@@ -106,45 +108,44 @@ public class LoadingView extends View {
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
-        if (widthMode == MeasureSpec.EXACTLY) {
-            mWidth = widthSize;
-        } else {
-            mWidth = PxUtils.dpToPx(300, mContext);
-        }
-
         if (heightMode == MeasureSpec.EXACTLY) {
             mHeight = heightSize;
         } else {
             mHeight = PxUtils.dpToPx(40, mContext);
         }
+
+        if (widthMode == MeasureSpec.EXACTLY) {
+            mWidth = widthSize;
+        } else {
+            mWidth = mHeight;
+        }
+
         mRadius = mHeight / 2;
         if (mWidth - 2 * mRadius < 0) {
             mWidth = 2 * mRadius;
         }
-        setMeasuredDimension(mWidth, mHeight);
-        if (mBitmap == null) {
-            mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888); //生成一个bitmap
-        }
-        if (mCanvas == null) {
-            mCanvas = new Canvas(mBitmap);//将bitmp放在我们自己的画布上，实际上mCanvas.draw的时候 改变的是这个bitmap对象
-        }
+
+        mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888); //生成一个bitmap
+        mCanvas = new Canvas(mBitmap);//将bitmp放在我们自己的画布上，实际上mCanvas.draw的时候 改变的是这个bitmap对象
+        mBitmapFans = BitmapUtil.getBitmapFromVectorDrawable(mContext, R.drawable.fan, mFansColor, mHeight);
+
         if (mLeftRectf == null) {
             mLeftRectf = new RectF();
-            mLeftRectf.left = 0;
-            mLeftRectf.top = 0;
-            mLeftRectf.right = 2 * mRadius;
-            mLeftRectf.bottom = mHeight;
         }
         if (mRightRectf == null) {
             mRightRectf = new RectF();
-            mRightRectf.left = mWidth - 2 * mRadius;
-            mRightRectf.top = 0;
-            mRightRectf.right = mWidth;
-            mRightRectf.bottom = mHeight;
         }
-        if (mBitmapFans == null) {
-            mBitmapFans = BitmapUtil.getBitmapFromVectorDrawable(mContext, R.drawable.fan, mFansColor, mHeight);
-        }
+        mLeftRectf.left = 0;
+        mLeftRectf.top = 0;
+        mLeftRectf.right = 2 * mRadius;
+        mLeftRectf.bottom = mHeight;
+
+        mRightRectf.left = mWidth - 2 * mRadius;
+        mRightRectf.top = 0;
+        mRightRectf.right = mWidth;
+        mRightRectf.bottom = mHeight;
+
+        setMeasuredDimension(mWidth, mHeight);
     }
 
     @Override
@@ -167,10 +168,13 @@ public class LoadingView extends View {
         if (x > 0) {
             mPath.moveTo(0, 0);
             mPath.lineTo(x, 0);
-            if ("1".equals(mWaveMode)) {
-                mPath.cubicTo(x + y, mHeight / 3 + y, x - y, 2 * mHeight / 3 + y, x, mHeight);
-            } else {
-                mPath.cubicTo(x + y, mHeight / 3, x - y, 2 * mHeight / 3, x, mHeight);
+            switch (mWaveMode) {
+                case WAVE_MODE_FLOATING:
+                    mPath.cubicTo(x + y, mHeight / 3 + y, x - y, 2 * mHeight / 3 + y, x, mHeight);
+                    break;
+                default:
+                    mPath.cubicTo(x + y, mHeight / 3, x - y, 2 * mHeight / 3, x, mHeight);
+                    break;
             }
             mPath.lineTo(0, mHeight);
             mPath.close();
@@ -183,20 +187,26 @@ public class LoadingView extends View {
         mCanvas.drawArc(mRightRectf, 270, 180, true, mBgPaint);
 
         mCanvas.drawPath(mPath, mWavePaint);
-//        mCanvas.drawPoint(x + y, mHeight / 3 + y, mWavePaint);
-//        mCanvas.drawPoint(x - y, 2 * mHeight / 3 + y, mWavePaint);
 
         mMatrix.reset();
         if (mIsFansMove) {
-            mMatrix.postRotate(mRotate, mRadius, mRadius);
-            mRotate = (mRotate + 10) % 360;
+            switch (mFansMode) {
+                case FANS_MODE_PROGRESS_MOVE:
+                    mRotate = (int) ((mProgress / (float) mMax) * 100 * 10);
+                    mMatrix.postRotate(mRotate, mRadius, mRadius);
+                    break;
+                default:
+                    mMatrix.postRotate(mRotate, mRadius, mRadius);
+                    mRotate = (mRotate + 10) % 360;
+                    break;
+            }
         }
         mCanvas.translate(mWidth - 2 * mRadius, 0);
         mCanvas.drawBitmap(mBitmapFans, mMatrix, mBgPaint);
         mCanvas.translate(2 * mRadius - mWidth, 0);
 
         canvas.drawBitmap(mBitmap, 0, 0, mBgPaint);
-        postInvalidateDelayed(5);
+        invalidate();
     }
 
     public int getProgress() {
@@ -220,28 +230,19 @@ public class LoadingView extends View {
     }
 
     public int getWaveMode() {
-        switch (mWaveMode) {
-            case "0":
-                return WAVE_MODE_DEFAULT;
-            case "1":
-                return WAVE_MODE_FLOATING;
-            default:
-                return WAVE_MODE_DEFAULT;
-        }
+        return mWaveMode;
     }
 
     public void setWaveMode(int waveMode) {
-        switch (waveMode) {
-            case WAVE_MODE_DEFAULT:
-                mWaveMode = "0";
-                break;
-            case WAVE_MODE_FLOATING:
-                mWaveMode = "1";
-                break;
-            default:
-                mWaveMode = "0";
-                break;
-        }
+        mWaveMode = waveMode;
+    }
+
+    public int getFansMode() {
+        return mFansMode;
+    }
+
+    public void setFansMode(int fansMode) {
+        mFansMode = fansMode;
     }
 
     public void setProgress(int progress) {

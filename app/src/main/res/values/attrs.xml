@@ -14,5 +14,9 @@
             <enum name="default_floating" value="0" />
             <enum name="floating_around" value="1" />
         </attr>
+        <attr name="fans_mode" format="enum">
+            <enum name="auto_move" value="0" />
+            <enum name="progress_move" value="1" />
+        </attr>
     </declare-styleable>
 </resources>
