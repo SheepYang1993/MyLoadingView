@@ -18,7 +18,7 @@
 
         <me.sheepyang.loadingview.LoadingView
             android:id="@+id/loadingView"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:bg_color="#8197ab"
             app:fans_color="#e2dedc"

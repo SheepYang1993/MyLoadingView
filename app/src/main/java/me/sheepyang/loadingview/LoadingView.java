@@ -6,7 +6,6 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -15,7 +14,6 @@ import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 
-import me.sheepyang.loadingview.utils.BitmapUtil;
 import me.sheepyang.loadingview.utils.PxUtils;
 
 /**
@@ -33,7 +31,6 @@ public class LoadingView extends View {
     private float mMaxWaveSize;
     private int mMinFansSpeed;
     private int mMaxFansSpeed;
-    private Bitmap mBitmapFans;
     private Context mContext;
     private int mWaveColor;
     private int mFansColor;
@@ -42,15 +39,16 @@ public class LoadingView extends View {
     private int mHeight;
     private Paint mWavePaint;
     private Paint mBgPaint;
+    private Paint mFansPaint;
     private int mRadius;
     private RectF mLeftRectf;
     private RectF mRightRectf;
-    private Matrix mMatrix;
     private int mRotate;
     private Bitmap mBitmap;
     private Canvas mCanvas;
     private PorterDuffXfermode mMode = new PorterDuffXfermode(PorterDuff.Mode.SRC_IN);
     private Path mPath;
+    private Path mFansPath;
     private boolean isUp;
     private int x;
     private int y = 10;
@@ -59,6 +57,11 @@ public class LoadingView extends View {
     private int mProgress;
     private int mMax;
     private boolean mIsFansMove;
+    private Path mBladePath;
+    private float mFansStrokePercent = 0.1f;// 风扇画笔线条宽度比
+    private RectF mBladeRectf;
+    private Path mWaveTest;
+    private RectF mWaveTestRectf;
 
     public LoadingView(Context context) {
         this(context, null);
@@ -103,8 +106,21 @@ public class LoadingView extends View {
         mBgPaint.setFilterBitmap(true);
         mBgPaint.setColor(mBgColor);
 
-        mMatrix = new Matrix();
+        mFansPaint = new Paint();
+        mFansPaint.setAntiAlias(true);
+        mFansPaint.setFilterBitmap(true);
+        mFansPaint.setColor(mFansColor);
+        mFansPaint.setStyle(Paint.Style.STROKE);
+
         mPath = new Path();
+        mFansPath = new Path();
+        mBladePath = new Path();
+        mWaveTest = new Path();
+
+        mLeftRectf = new RectF();
+        mRightRectf = new RectF();
+        mBladeRectf = new RectF();
+        mWaveTestRectf = new RectF();
     }
 
     @Override
@@ -133,14 +149,7 @@ public class LoadingView extends View {
 
         mBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888); //生成一个bitmap
         mCanvas = new Canvas(mBitmap);//将bitmp放在我们自己的画布上，实际上mCanvas.draw的时候 改变的是这个bitmap对象
-        mBitmapFans = BitmapUtil.getBitmapFromVectorDrawable(mContext, R.drawable.fan, mFansColor, mHeight);
 
-        if (mLeftRectf == null) {
-            mLeftRectf = new RectF();
-        }
-        if (mRightRectf == null) {
-            mRightRectf = new RectF();
-        }
         mLeftRectf.left = 0;
         mLeftRectf.top = 0;
         mLeftRectf.right = 2 * mRadius;
@@ -150,6 +159,32 @@ public class LoadingView extends View {
         mRightRectf.top = 0;
         mRightRectf.right = mWidth;
         mRightRectf.bottom = mHeight;
+
+        mFansPath.reset();
+        mBladePath.reset();
+        mWaveTest.reset();
+
+        mWaveTestRectf.left = mWidth * 0.2f;
+        mWaveTestRectf.top = 0;
+        mWaveTestRectf.right = mWidth * 0.5f;
+        mWaveTestRectf.bottom = mHeight;
+        mWaveTest.addArc(mWaveTestRectf, 270, 180);
+
+        mFansPaint.setStrokeWidth(mRadius * mFansStrokePercent);
+        mFansPath.addCircle(mRadius, mRadius, mRadius * (1 - mFansStrokePercent * 1.5f), Path.Direction.CW);// 大圆
+        mFansPath.addCircle(mRadius, mRadius, mFansPaint.getStrokeWidth(), Path.Direction.CW);// 小圆
+
+        float lineLeft = (mRadius - mFansStrokePercent - mFansPaint.getStrokeWidth()) * 0.35f;
+        float lineRight = (mRadius - mFansPaint.getStrokeWidth()) * 1f;
+        mBladePath.moveTo(lineLeft, mRadius);
+        mBladePath.lineTo(lineRight, mRadius);
+
+        float bladeWidth = lineRight - lineLeft;
+        mBladeRectf.left = lineLeft;
+        mBladeRectf.top = mRadius - bladeWidth / 2 - mFansPaint.getStrokeWidth() / 2;
+        mBladeRectf.right = lineRight;
+        mBladeRectf.bottom = mRadius + bladeWidth / 2 - mFansPaint.getStrokeWidth() / 2;
+        mBladePath.addArc(mBladeRectf, 0, 180);
 
         setMeasuredDimension(mWidth, mHeight);
     }
@@ -162,6 +197,8 @@ public class LoadingView extends View {
 
         mWaveSize = mWaveSize < mMinWaveSize ? mMinWaveSize : mWaveSize;
         mWaveSize = mWaveSize > mMaxWaveSize ? mMaxWaveSize : mWaveSize;
+
+        x = (int) (mProgress / (float) mMax * mWidth);
         if (y > mWaveSize) {
             isUp = true;// 波浪升到顶点了
         } else if (y < -mWaveSize) {
@@ -173,45 +210,64 @@ public class LoadingView extends View {
             y = y + 1;
         }
         mPath.reset();
-        x = (int) (mProgress / (float) mMax * mWidth);
+
+        int waveX1 = x + y;
+        int waveX2 = x - y;
+        int waveY1 = 0;
+        int waveY2 = 0;
+
         if (x > 0) {
             mPath.moveTo(0, 0);
             mPath.lineTo(x, 0);
             switch (mWaveMode) {
                 case WAVE_MODE_FLOATING:
-                    mPath.cubicTo(x + y, mHeight / 3 + y, x - y, 2 * mHeight / 3 + y, x, mHeight);
+                    waveY1 = mHeight / 4 + y;
+                    waveY2 = 3 * mHeight / 4 + y;
                     break;
                 default:
-                    mPath.cubicTo(x + y, mHeight / 3, x - y, 2 * mHeight / 3, x, mHeight);
+                    waveY1 = mHeight / 4;
+                    waveY2 = 3 * mHeight / 4;
                     break;
             }
+            mPath.cubicTo(waveX1, waveY1, waveX2, waveY2, x, mHeight);
             mPath.lineTo(0, mHeight);
             mPath.close();
         }
 
         mBitmap.eraseColor(Color.parseColor("#00000000"));
 
-        mCanvas.drawArc(mLeftRectf, 90, 270, true, mBgPaint);
-        mCanvas.drawRect(mRadius, 0, mWidth - mRadius, mHeight, mBgPaint);
-        mCanvas.drawArc(mRightRectf, 270, 180, true, mBgPaint);
+        mCanvas.drawArc(mLeftRectf, 90, 270, true, mBgPaint);// 绘制左半圆
+        mCanvas.drawRect(mRadius, 0, mWidth - mRadius, mHeight, mBgPaint);// 绘制中间矩形
+        mCanvas.drawArc(mRightRectf, 270, 180, true, mBgPaint);// 绘制右半圆
 
-        mCanvas.drawPath(mPath, mWavePaint);
-
-        mMatrix.reset();
+        mCanvas.drawPath(mPath, mWavePaint);//绘制波浪
+        /////以下为测试部分////////////////////
+        mCanvas.drawPath(mWaveTest, mFansPaint);
+        mCanvas.drawPoint(waveX1, waveY1, mFansPaint);
+        mCanvas.drawPoint(waveX2, waveY2, mFansPaint);
+        /////以上为测试部分////////////////////
+        //绘制风扇
+        mCanvas.translate(mWidth - 2 * mRadius, 0);
+        mCanvas.drawPath(mFansPath, mFansPaint);// 风扇的两个圆圈
         if (mIsFansMove) {
             switch (mFansMode) {
                 case FANS_MODE_PROGRESS_MOVE:
                     mRotate = (int) ((mProgress / (float) mMax) * 100 * mFansSpeed);
-                    mMatrix.postRotate(mRotate, mRadius, mRadius);
                     break;
                 default:
-                    mMatrix.postRotate(mRotate, mRadius, mRadius);
                     mRotate = (mRotate + mFansSpeed) % 360;
                     break;
             }
+        } else {
+            mRotate = 0;
         }
-        mCanvas.translate(mWidth - 2 * mRadius, 0);
-        mCanvas.drawBitmap(mBitmapFans, mMatrix, mBgPaint);
+        mCanvas.rotate(mRotate, mRadius, mRadius);
+        //绘制扇叶
+        for (int i = 0; i < 4; i++) {
+            mCanvas.drawPath(mBladePath, mFansPaint);
+            mCanvas.rotate(90, mRadius, mRadius);
+        }
+        mCanvas.rotate(-mRotate, mRadius, mRadius);
         mCanvas.translate(2 * mRadius - mWidth, 0);
 
         canvas.drawBitmap(mBitmap, 0, 0, mBgPaint);
